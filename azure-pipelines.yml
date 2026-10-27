@@ -1,8 +1,8 @@
 trigger:
-  - master # Despliegue continuo automático al hacer push a develop
+  - master
 
 pool:
-  vmImage: 'ubuntu-latest' # Ubuntu compila Flutter Web mucho más rápido y sin errores de ruta
+  vmImage: 'windows-2022'
 
 variables:
   buildConfiguration: 'Release'
@@ -17,23 +17,22 @@ stages:
   - job: BuildJob
     displayName: 'Build y Empaquetado'
     steps:
-    - script: |
-        git clone https://github.com/flutter/flutter.git -b stable --depth 1 $(Agent.ToolsDirectory)/flutter
-        echo "##vso[task.prependpath]$(Agent.ToolsDirectory)/flutter/bin"
+    - powershell: |
+        git clone https://github.com/flutter/flutter.git -b stable --depth 1 $env:AGENT_TOOLSDIRECTORY\flutter
+        Write-Host "##vso[task.prependpath]$env:AGENT_TOOLSDIRECTORY\flutter\bin"
       displayName: 'Instalar Flutter SDK (Stable)'
 
-    - script: |
+    - powershell: |
         flutter --version
         flutter pub get
         flutter build web --release --no-tree-shake-icons
       displayName: 'Compilar Flutter Web en Release'
 
-    # Asegura que el web.config para IIS esté en la carpeta final compilada
-    - script: |
-        if [ -f web/web.config ]; then
-          cp web/web.config build/web/web.config
-          echo "web.config copiado a build/web/"
-        fi
+    - powershell: |
+        if (Test-Path "web\web.config") {
+          Copy-Item "web\web.config" -Destination "build\web\web.config" -Force
+          Write-Host "web.config copiado a build\web\"
+        }
       displayName: 'Verificar web.config para IIS'
 
     - task: ArchiveFiles@2
@@ -74,7 +73,7 @@ stages:
     - task: AzureWebApp@1
       displayName: 'Desplegar en Azure App Service'
       inputs:
-        azureSubscription: 'azureSubscription' # Debe coincidir con el nombre de tu Service Connection en Azure DevOps
+        azureSubscription: 'ContinuoAzore' # Verifica que coincida con tu Service Connection en Azure DevOps
         appType: 'webApp'
         appName: 'App-deploy-ML-Movil-Eatus2' # Tu App Service exacto de Azure
         package: '$(System.ArtifactsDirectory)/drop/app-web.zip'
