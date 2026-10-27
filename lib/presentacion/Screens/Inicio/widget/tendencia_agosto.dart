@@ -54,17 +54,19 @@ class _TendenciaAgostoState extends State<TendenciaAgosto> {
           const SizedBox(height: 20),
           SizedBox(
             height: 100,
-            child: CustomPaint(
-          size: const Size(double.infinity, 100),
-              isComplex: true,
-              willChange: false,
-              painter: TendenciaPainter(
-                semana1: semana1,
-                semana2: semana2,
-                semana3: semana3,
-                semana4: semana4,
-              ),
-            child: const SizedBox.expand(),
+            width: double.infinity,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return CustomPaint(
+                  size: Size(constraints.maxWidth, 100),
+                  painter: TendenciaPainter(
+                    semana1: semana1,
+                    semana2: semana2,
+                    semana3: semana3,
+                    semana4: semana4,
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(height: 8),
