@@ -1,5 +1,3 @@
 class ApiConstant {
-  static const String bsUrl = 'http://192.168.1.219:5275/api'; // prueba local por USB
+  static const String bsUrl = 'https://app-ployet-veterinaria-eastus-gsaaaghcg2h2bjd9.mexicocentral-01.azurewebsites.net/api';
 }
-
-// Localhost indagar concepto pero profundostodo sobre ello
