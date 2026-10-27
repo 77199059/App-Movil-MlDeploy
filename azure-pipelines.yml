@@ -25,7 +25,7 @@ stages:
     - script: |
         flutter --version
         flutter pub get
-        flutter build web --release
+        flutter build web --release --no-tree-shake-icons
       displayName: 'Compilar Flutter Web en Release'
 
     # Asegura que el web.config para IIS esté en la carpeta final compilada
