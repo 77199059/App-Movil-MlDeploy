@@ -8,72 +8,32 @@ variables:
   buildConfiguration: 'Release'
 
 stages:
-# ==========================================
-# 1. ETAPA DE COMPILACIÓN (CI)
-# ==========================================
+# =======================================================
+# ETAPA DE COMPILACIÓN Y GENERACIÓN DEL APK (CI)
+# =======================================================
 - stage: Build
-  displayName: 'Compilación Flutter Web'
+  displayName: 'Compilación Flutter Android APK'
   jobs:
-  - job: BuildJob
-    displayName: 'Build y Empaquetado'
+  - job: BuildAndroidJob
+    displayName: 'Generar APK Release'
     steps:
+    # 1. Instalar Flutter SDK
     - powershell: |
         git clone https://github.com/flutter/flutter.git -b stable --depth 1 $env:AGENT_TOOLSDIRECTORY\flutter
         Write-Host "##vso[task.prependpath]$env:AGENT_TOOLSDIRECTORY\flutter\bin"
       displayName: 'Instalar Flutter SDK (Stable)'
 
+    # 2. Descargar dependencias y compilar el APK
     - powershell: |
         flutter --version
         flutter pub get
-        flutter build web --release --no-tree-shake-icons
-      displayName: 'Compilar Flutter Web en Release'
+        flutter build apk --release
+      displayName: 'Compilar APK en Release'
 
-    - powershell: |
-        if (Test-Path "web\web.config") {
-          Copy-Item "web\web.config" -Destination "build\web\web.config" -Force
-          Write-Host "web.config copiado a build\web\"
-        }
-      displayName: 'Verificar web.config para IIS'
-
-    - task: ArchiveFiles@2
-      displayName: 'Comprimir artefactos web en ZIP'
-      inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/build/web'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/app-web.zip'
-        replaceExistingArchive: true
-
+    # 3. Publicar el APK como artefacto de Azure DevOps
     - task: PublishBuildArtifacts@1
-      displayName: 'Publicar Artefacto de Compilación'
+      displayName: 'Publicar APK generado como Artefacto'
       inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'drop'
+        PathtoPublish: 'build/app/outputs/flutter-apk/app-release.apk'
+        ArtifactName: 'app-apk'
         publishLocation: 'Container'
-
-# ==========================================
-# 2. ETAPA DE DESPLIEGUE (CD)
-# ==========================================
-- stage: Deploy
-  displayName: 'Despliegue a Azure App Service'
-  dependsOn: Build
-  condition: succeeded()
-  jobs:
-  - job: DeployJob
-    displayName: 'Desplegar en Azure'
-    steps:
-    - task: DownloadBuildArtifacts@0
-      displayName: 'Descargar Artefactos'
-      inputs:
-        buildType: 'current'
-        downloadType: 'single'
-        artifactName: 'drop'
-        downloadPath: '$(System.ArtifactsDirectory)'
-
-    - task: AzureWebApp@1
-      displayName: 'Desplegar en Azure App Service'
-      inputs:
-        azureSubscription: 'azureSubscription' # Verifica que coincida con tu Service Connection en Azure DevOps
-        appType: 'webApp'
-        appName: 'App-deploy-ML-Movil-Eatus2' # Tu App Service exacto de Azure
-        package: '$(System.ArtifactsDirectory)/drop/app-web.zip'
